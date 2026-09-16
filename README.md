@@ -84,25 +84,6 @@ No `npm install`, no build command, no dependencies.
 
 ---
 
-## 🌐 Deploy to GitHub Pages
-
-1. Create a new **Public** repository on GitHub (e.g. `pixel-sokoban`).
-2. Push this folder's contents to the `main` branch:
-   ```bash
-   git init
-   git branch -M main
-   git add .
-   git commit -m "feat: pixel sokoban"
-   git remote add origin https://github.com/<your-username>/pixel-sokoban.git
-   git push -u origin main
-   ```
-3. In the repo: **Settings → Pages → Source: Deploy from a branch → Branch: `main` / `(root)` → Save**.
-4. Wait ~1 minute. Your site goes live at:
-   ```
-   https://<your-username>.github.io/pixel-sokoban/
-   ```
-
----
 
 ## 🧩 Levels
 
