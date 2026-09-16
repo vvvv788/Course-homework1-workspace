@@ -8,13 +8,6 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Levels](https://img.shields.io/badge/levels-8-orange)
 
----
-
-## 🎮 Play
-
-Open `index.html` directly in any modern browser, or visit the live demo:
-
-🌐 **Live Demo:** `https://<your-username>.github.io/pixel-sokoban/`
 
 ---
 
