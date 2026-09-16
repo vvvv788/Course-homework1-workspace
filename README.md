@@ -1,8 +1,5 @@
 # 📦 Pixel Sokoban
 
-> A retro pixel-art **Sokoban** (box-pushing puzzle) game built with pure HTML5 Canvas.  
-> No frameworks, no build step, no backend — just **one single `index.html`** file.
-
 ![Static](https://img.shields.io/badge/type-static%20site-brightgreen)
 ![No Backend](https://img.shields.io/badge/backend-none-success)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -54,17 +51,6 @@ Push every wooden crate onto a glowing target dot. Crates can only be **pushed**
 
 ---
 
-## 📁 Project Structure
-
-```
-pixel-sokoban/
-├── index.html      # The entire game (HTML + CSS + JS in one file)
-└── README.md       # This file
-```
-
-That's it — **one HTML file contains everything**.
-
----
 
 ## 🚀 Run Locally
 
