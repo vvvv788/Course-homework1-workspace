@@ -1,127 +1,126 @@
-# 📦 Pixel Sokoban
+<div align="center">
 
-![Static](https://img.shields.io/badge/type-static%20site-brightgreen)
-![No Backend](https://img.shields.io/badge/backend-none-success)
-![License](https://img.shields.io/badge/license-MIT-blue)
-![Levels](https://img.shields.io/badge/levels-8-orange)
+# 🎮 PIXEL SOKOBAN · 像素推箱子
 
+> 一个纯网页、零依赖的像素风推箱子解谜小游戏 · *A zero-dependency pixel-art Sokoban puzzle.*
 
----
+[![Game](https://img.shields.io/badge/Game-Pixel%20Art-orange)](https://vvvv788.github.io/Course-homework1-workspace/)
+[![Genre](https://img.shields.io/badge/Genre-Puzzle-blue)](https://vvvv788.github.io/Course-homework1-workspace/)
+[![Levels](https://img.shields.io/badge/Levels-16-purple)](https://vvvv788.github.io/Course-homework1-workspace/pixel-sokoban/)
+[![Stars](https://img.shields.io/badge/Rating-3%20Stars-gold)](https://vvvv788.github.io/Course-homework1-workspace/pixel-sokoban/)
+[![Engine](https://img.shields.io/badge/Engine-HTML5%20Canvas-green)](https://vvvv788.github.io/Course-homework1-workspace/)
 
-## ✨ Features
+**把每一个箱子推到目标格即可过关** —— 16 关难度递进、四种游戏道具、基于步数的星级评价。
 
-- 🎨 **Hand-drawn pixel art** rendered entirely with Canvas (no image assets)
-- 🧠 **8 hand-crafted levels** with progressive difficulty
-  - straight pushes → corners → ordering → multi-box → wall routing → long routing
-- ↩️ **Undo** every move (never get stuck)
-- 🏆 **Best-move tracking** per level (saved in `localStorage`)
-- 🔊 **8-bit sound effects** generated live with the Web Audio API (no audio files)
-- 📱 **Fully responsive** — keyboard on desktop, swipe + on-screen D-pad on mobile
-- ⚡ **Smooth tile animation** with `requestAnimationFrame`
-- 🌗 Self-contained pixel UI with retro fonts (`Press Start 2P` + `ZCOOL KuaiLe`)
+</div>
 
 ---
 
-## 🕹️ How to Play
+## 📑 目录 · Contents
 
-Push every wooden crate onto a glowing target dot. Crates can only be **pushed**, never pulled — plan ahead!
-
-### Controls
-
-| Action | Desktop | Mobile |
-|---|---|---|
-| Move | `↑ ↓ ← →` or `W A S D` | Swipe on the board / on-screen D-pad |
-| Undo last move | `U` or `UNDO` button | `UNDO` button |
-| Restart level | `R` or `RESET` button | `RESET` button |
-| Back to menu | `Esc` or `MENU` button | `MENU` button |
-| Toggle sound | `SND` button | `SND` button |
-| Start / confirm | `Enter` or `Space` | Tap |
-
-### Map Legend
-
-| Symbol | Meaning |
-|---|---|
-| `#` | Wall |
-| ` ` | Floor |
-| `.` | Target point |
-| `$` | Crate |
-| `@` | Player |
-| `*` | Crate on target |
-| `+` | Player on target |
+- [🕹️ 在线试玩 Play](#-在线试玩-play)
+- [🎯 玩法 How to Play](#-玩法-how-to-play)
+- [✨ 功能特性 Features](#-功能特性-features)
+- [🧩 游戏道具 Items](#-游戏道具-items)
+- [🗺️ 关卡设计 Levels](#-关卡设计-levels)
+- [🛠️ 项目结构 Structure](#-项目结构-structure)
+- [🤖 求解器与校验 Solver](#-求解器与校验-solver)
+- [👩‍💻 开发者 Developer](#-开发者-developer)
 
 ---
 
+## 🕹️ 在线试玩 Play
 
-## 🚀 Run Locally
+| 入口 | 链接 |
+| --- | --- |
+| 🎯 游戏本体 | <https://vvvv788.github.io/Course-homework1-workspace/pixel-sokoban/> |
+| 🏠 项目落地页 | <https://vvvv788.github.io/Course-homework1-workspace/> |
 
-Because the game is 100% static, you have three options:
-
-1. **Double-click** `index.html` → opens in your default browser.
-2. **Drag & drop** `index.html` into a browser window.
-3. **Serve it** (optional, for a more production-like setup):
-   ```bash
-   # Python
-   python3 -m http.server 8000
-   # then open http://localhost:8000
-
-   # or Node
-   npx serve
-   ```
-
-No `npm install`, no build command, no dependencies.
+> 💡 本地游玩：直接双击打开 `index.html`（落地页）或 `pixel-sokoban/index.html`（游戏）即可，**无需任何构建步骤**。
 
 ---
 
-## 🛠️ Tech Stack
+## 🎯 玩法 How to Play
 
-- **HTML5 Canvas** — all rendering
-- **Vanilla JavaScript (ES6+)** — game logic, IIFE-scoped, no globals
-- **CSS3** — pixel-art UI, responsive layout, `image-rendering: pixelated`
-- **Web Audio API** — procedurally generated sound effects
-- **`localStorage`** — best-move persistence
+用方向键或 `WASD` 控制角色在地图中走动，走向箱子即可推动它。让**所有箱子归位**即过关。
 
-> Zero npm packages. Zero frameworks. Zero build tools.
-
----
-
-
-## 🧩 Levels
-
-| # | Name | Size | Crates | Mechanic |
-|---|---|---|---|---|
-| 1 | Twin Push | 10×9 | 2 | Straight pushes (intro) |
-| 2 | The Corner | 9×9 | 1 | Routing around a bend |
-| 3 | Triple Line | 10×9 | 3 | Ordering with adjacent crates |
-| 4 | Four Corners | 11×11 | 4 | Multi-box on a big map |
-| 5 | Behind the Wall | 11×11 | 2 | Push around an obstacle |
-| 6 | Around the Pillars | 12×13 | 4 | Bidirectional wall routing |
-| 7 | The Storage | 13×12 | 6 | Dense multi-box routing |
-| 8 | Grand Finale | 13×14 | 6 | Long-distance routing |
-
-Every level has been verified solvable.
+| 按键 Key | 功能 Action |
+| --- | --- |
+| `↑ ↓ ← →` / `W A S D` | 移动 / 推箱 Move / Push |
+| `R` | 重开本关 Restart level |
+| `U` | 撤销一步 Undo |
+| `Y` | 重做 Redo |
+| `P` | 回放解法演示 Replay solution |
 
 ---
 
-## 🎨 Design Notes
+## ✨ 功能特性 Features
 
-- **Palette**: a warm dungeon set (tan floors, brown stone walls, orange accents) — no default blue/indigo.
-- **Sprites**: the player is an 8×8 pixel sprite drawn cell-by-cell via `fillRect`.
-- **Crates**: drawn programmatically with wood texture, X-straps, corner rivets; crates on targets turn green with a glow border.
-- **Targets**: a pulsing diamond marker so they're easy to spot.
-
----
-
-## 📝 License
-
-Released under the **MIT License**. Feel free to fork, modify, and share.
+- 🧩 **16 关难度递进**：前 8 关经典推箱教学，后 8 关逐步引入道具与综合挑战。
+- 🔧 **四种游戏道具**：传送带、开关+门、彩色箱+同色目标、传送门（详见下节）。
+- ⭐ **星级评价**：依据 PAR 最优步数评定 —— 达标 ★★★、1.5 倍 ★★、通关即 ★。
+- ↩️ **撤销 / 重做 / 回放**：`U` 撤销、`Y` 重做、`P` 回放、`R` 重开，轻松试错不卡关。
 
 ---
 
-## 🙌 Credits
+## 🧩 游戏道具 Items
 
-- Fonts: [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) & [ZCOOL KuaiLe](https://fonts.google.com/specimen/ZCOOL+KuaiLe) by Google Fonts
-- Inspired by the classic [Sokoban](https://en.wikipedia.org/wiki/Sokoban) by Hiroyuki Imabayashi (1981)
+| 道具 Item | 符号 Glyph | 说明 Description |
+| --- | --- | --- |
+| ➤ 传送带 Conveyor | `^ v < >` | 箱子被推上去后沿箭头方向自动滑动。 |
+| 🔘 开关 + 门 Switch + Door | `S` / `D` | 踩下开关，对应编号的门永久开启。 |
+| 🎨 彩色箱 + 同色目标 Colored Crate | `123` / `abc` | 红 / 蓝 / 绿箱子须各自推到同色目标格。 |
+| 🌀 传送门 Portal | `P` | 成对出现，玩家或箱子进入其一，从配对另一个出来。 |
 
 ---
 
-<p align="center">Made with ❤️ and HTML Canvas. Push the crates!</p>
+## 🗺️ 关卡设计 Levels
+
+| 关卡 Level | 内容 Content |
+| --- | --- |
+| **L1 – L8** | 纯推箱子，难度渐进 Classic puzzles, increasing difficulty |
+| **L9** | 传送带 Conveyor |
+| **L10** | 开关 + 门 Switch + Door |
+| **L11** | 彩色箱 + 同色目标 Colored Crate + Target |
+| **L12** | 传送门 Portal |
+| **L13** | 传送带 + 开关 Conveyor + Switch |
+| **L14** | 彩色 + 传送门 Colored + Portal |
+| **L15** | 传送门 + 开关 Portal + Switch |
+| **L16** | 传送带 + 彩色 + 开关（三合一终章）Finale |
+
+---
+
+## 🛠️ 项目结构 Structure
+
+```
+├── index.html              # 项目落地页（功能介绍 + 跳转链接，夜色霓虹像素风）
+├── pixel-sokoban/
+│   └── index.html          # 游戏本体（单文件 HTML5 Canvas，零依赖）
+├── solve-levels.js         # BFS 推箱求解器，校验每关可解并估算 PAR
+├── check-levels.js         # 关卡合法性校验脚本
+└── src/                    # Next.js + shadcn/ui 脚手架样板（与游戏本体无关）
+```
+
+> ℹ️ `src/`、`package.json`、`next.config.ts` 等为 Z.ai 生成的 Next.js 脚手架样板；本项目游戏部分仅依赖 `pixel-sokoban/index.html` 与根目录 `index.html`，**无需安装任何依赖即可游玩**。
+
+---
+
+## 🤖 求解器与校验 Solver
+
+关卡的可解性与星级基准步数（PAR）由 `solve-levels.js` 中的 BFS 求解器校验生成，确保 16 关均可在合理步数内通关。
+
+```bash
+node solve-levels.js     # 运行 BFS 求解器，输出每关最优推箱步数
+node check-levels.js     # 校验关卡配置合法性
+```
+
+---
+
+## 👩‍💻 开发者 Developer
+
+**Vivi Lin Ziwei（林子微）· 2026214159**
+
+<p align="center">
+人工智能课程作业 · 纯网页像素解谜 · HTML5 Canvas<br>
+AI Course Project · Pixel Puzzle · HTML5 Canvas
+</p>
