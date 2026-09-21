@@ -1,891 +1,883 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<meta name="theme-color" content="#1d1a14" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<title>像素推箱子 · Pixel Sokoban</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=ZCOOL+KuaiLe&display=swap');
-
-  :root {
-    --bg:        #1d1a14;
-    --panel:     #2c2820;
-    --panel-l:   #4a4438;
-    --panel-d:   #15130e;
-    --accent:    #f4a259;
-    --accent-d:  #c06b1f;
-    --accent2:   #7cb342;
-    --text:      #f5ecd9;
-    --muted:     #a89a7a;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  html, body {
-    height: 100%;
-    width: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Press Start 2P', 'ZCOOL KuaiLe', system-ui, sans-serif;
-    overflow: hidden;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: none;
-  }
-
-  #game {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background:
-      radial-gradient(circle at 18% 28%, rgba(80,60,30,0.35) 0, transparent 42%),
-      radial-gradient(circle at 82% 72%, rgba(80,60,30,0.30) 0, transparent 42%),
-      var(--bg);
-    padding: 12px;
-  }
-
-  /* ---- Screens ---- */
-  .screen {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 680px;
-    text-align: center;
-    gap: 10px;
-  }
-  .screen.active { display: flex; }
-
-  .overlay {
-    display: none;
-    position: absolute;
-    inset: 0;
-    background: rgba(10,8,4,0.82);
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    padding: 16px;
-  }
-  .overlay.active { display: flex; }
-  .overlay-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 14px;
-    max-width: 460px;
-    border: 4px solid var(--panel-l);
-    box-shadow: 0 0 0 4px var(--panel-d), 0 10px 30px rgba(0,0,0,0.6);
-    background: var(--panel);
-    padding: 26px 22px;
-    border-radius: 2px;
-  }
-
-  /* ---- Title ---- */
-  .title {
-    font-family: 'ZCOOL KuaiLe', sans-serif;
-    font-size: clamp(40px, 9vw, 70px);
-    color: var(--accent);
-    text-shadow: 4px 4px 0 var(--accent-d), 8px 8px 0 rgba(0,0,0,0.45);
-    letter-spacing: 4px;
-    line-height: 1.1;
-  }
-  .title.sm { font-size: clamp(26px, 6vw, 40px); }
-  .subtitle {
-    font-family: 'Press Start 2P', monospace;
-    font-size: clamp(9px, 2.2vw, 14px);
-    color: var(--muted);
-    letter-spacing: 2px;
-    line-height: 1.6;
-  }
-
-  /* ---- Buttons ---- */
-  .btn {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 12px;
-    color: var(--text);
-    background: var(--panel);
-    border: none;
-    border-top: 4px solid var(--panel-l);
-    border-left: 4px solid var(--panel-l);
-    border-right: 4px solid var(--panel-d);
-    border-bottom: 4px solid var(--panel-d);
-    padding: 13px 18px;
-    cursor: pointer;
-    letter-spacing: 1px;
-    transition: filter .08s, transform .05s;
-    min-width: 150px;
-  }
-  .btn:hover { filter: brightness(1.18); }
-  .btn:active { transform: translateY(2px); }
-  .btn-primary {
-    background: var(--accent);
-    color: #2a1a0a;
-    border-top-color: #ffd9a0;
-    border-left-color: #ffd9a0;
-    border-right-color: var(--accent-d);
-    border-bottom-color: var(--accent-d);
-    font-size: 14px;
-    padding: 16px 26px;
-  }
-  .btn-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-
-  /* ---- HUD ---- */
-  #hud {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    width: 100%;
-    max-width: 620px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 11px;
-    flex-wrap: wrap;
-  }
-  .hud-stats { display: flex; gap: 16px; }
-  .hud-stat { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-  .hud-stat .label { color: var(--muted); font-size: 8px; }
-  .hud-stat .value { color: var(--accent); font-size: 15px; }
-  .hud-btns { display: flex; gap: 6px; flex-wrap: wrap; }
-  .icon-btn {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
-    background: var(--panel);
-    color: var(--text);
-    border: 3px solid var(--panel-d);
-    border-top-color: var(--panel-l);
-    border-left-color: var(--panel-l);
-    padding: 9px 10px;
-    cursor: pointer;
-    min-width: 46px;
-  }
-  .icon-btn:hover { filter: brightness(1.25); }
-  .icon-btn:active { transform: translateY(2px); }
-
-  /* ---- Canvas frame ---- */
-  #canvas-wrap {
-    position: relative;
-    padding: 8px;
-    background: #0d0b07;
-    border: 4px solid var(--panel-l);
-    box-shadow: 0 0 0 4px var(--panel-d), 0 8px 24px rgba(0,0,0,0.55);
-  }
-  canvas {
-    display: block;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    max-width: 100%;
-    height: auto;
-    touch-action: none;
-  }
-
-  /* ---- D-pad (mobile) ---- */
-  #dpad {
-    display: none;
-    margin-top: 14px;
-    width: 168px;
-    height: 168px;
-    position: relative;
-  }
-  @media (hover: none) and (pointer: coarse) { #dpad { display: block; } }
-  .dpad-btn {
-    position: absolute;
-    width: 56px; height: 56px;
-    background: var(--panel);
-    color: var(--accent);
-    border: 3px solid var(--panel-d);
-    border-top-color: var(--panel-l);
-    border-left-color: var(--panel-l);
-    font-size: 22px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-  }
-  .dpad-btn:active { filter: brightness(1.5); transform: translateY(1px); }
-  #dpad-up    { top: 0; left: 56px; }
-  #dpad-down  { bottom: 0; left: 56px; }
-  #dpad-left  { top: 56px; left: 0; }
-  #dpad-right { top: 56px; right: 0; }
-
-  /* ---- Level select ---- */
-  .level-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin: 12px 0 6px;
-    width: 100%;
-    max-width: 420px;
-  }
-  .level-cell {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 16px;
-    padding: 18px 6px;
-    background: var(--panel);
-    color: var(--text);
-    border: 3px solid var(--panel-d);
-    border-top-color: var(--panel-l);
-    border-left-color: var(--panel-l);
-    cursor: pointer;
-    text-align: center;
-  }
-  .level-cell:hover { filter: brightness(1.2); }
-  .level-cell .best { font-size: 7px; color: var(--accent2); margin-top: 8px; letter-spacing: 1px; }
-
-  .hint {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
-    color: var(--muted);
-    margin-top: 16px;
-    line-height: 1.9;
-  }
-  .credit {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 7px;
-    color: var(--muted);
-    margin-top: 18px;
-    opacity: 0.7;
-  }
-
-  @media (max-width: 480px) {
-    #hud { font-size: 9px; gap: 6px; }
-    .hud-stat .value { font-size: 13px; }
-    .hud-stats { gap: 10px; }
-    .icon-btn { padding: 8px 8px; font-size: 8px; min-width: 40px; }
-  }
-</style>
-</head>
-<body>
-<div id="game">
-
-  <!-- ===== Start Screen ===== -->
-  <section id="start-screen" class="screen active">
-    <h1 class="title">像素推箱子</h1>
-    <p class="subtitle">PIXEL SOKOBAN · 8 LEVELS · PUSH THE CRATES!</p>
-    <div class="btn-row" style="margin-top:14px;">
-      <button class="btn btn-primary" id="btn-start">开始游戏 · START</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn" id="btn-levels">选择关卡 · LEVELS</button>
-    </div>
-    <p class="hint">
-      方向键 / WASD 移动 &nbsp;·&nbsp; R 重开 &nbsp;·&nbsp; U 撤销<br>
-      移动端可滑动屏幕或使用方向键
-    </p>
-    <p class="credit">v2.0 · Made with HTML Canvas</p>
-  </section>
-
-  <!-- ===== Level Select ===== -->
-  <section id="level-screen" class="screen">
-    <h2 class="title sm">选择关卡</h2>
-    <p class="subtitle">SELECT LEVEL</p>
-    <div class="level-grid" id="level-grid"></div>
-    <button class="btn" id="btn-back-menu">返回菜单 · BACK</button>
-  </section>
-
-  <!-- ===== Play Screen ===== -->
-  <section id="play-screen" class="screen">
-    <div id="hud">
-      <div class="hud-stats">
-        <div class="hud-stat"><span class="label">LEVEL</span><span class="value" id="hud-level">1</span></div>
-        <div class="hud-stat"><span class="label">MOVES</span><span class="value" id="hud-moves">0</span></div>
-        <div class="hud-stat"><span class="label">BEST</span><span class="value" id="hud-best">--</span></div>
-      </div>
-      <div class="hud-btns">
-        <button class="icon-btn" id="btn-undo"  title="撤销 (U)">UNDO</button>
-        <button class="icon-btn" id="btn-restart" title="重开 (R)">RESET</button>
-        <button class="icon-btn" id="btn-menu"  title="返回菜单">MENU</button>
-        <button class="icon-btn" id="btn-sound" title="声音">SND</button>
-      </div>
-    </div>
-    <div id="canvas-wrap">
-      <canvas id="canvas" width="320" height="320"></canvas>
-    </div>
-    <div id="dpad">
-      <button class="dpad-btn" id="dpad-up">▲</button>
-      <button class="dpad-btn" id="dpad-down">▼</button>
-      <button class="dpad-btn" id="dpad-left">◀</button>
-      <button class="dpad-btn" id="dpad-right">▶</button>
-    </div>
-  </section>
-
-  <!-- ===== Level Complete Overlay ===== -->
-  <div id="overlay-complete" class="overlay">
-    <div class="overlay-card">
-      <h2 class="title sm" style="color:var(--accent2);">过关！</h2>
-      <p class="subtitle" id="complete-stats">CLEAR!</p>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="btn-next">下一关 · NEXT</button>
-        <button class="btn" id="btn-replay">重玩 · REPLAY</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== Victory Overlay ===== -->
-  <div id="overlay-victory" class="overlay">
-    <div class="overlay-card">
-      <h2 class="title" style="font-size:clamp(32px,8vw,52px);">全部通关</h2>
-      <p class="subtitle">YOU ARE A SOKOBAN MASTER!</p>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="btn-restart-all">再玩一次 · AGAIN</button>
-        <button class="btn" id="btn-menu-victory">返回菜单 · MENU</button>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-(function () {
-  'use strict';
-
-  /* =========================================================
-   *  关卡数据 (Classic Sokoban notation)
-   *    #  墙     .  目标点     $  箱子
-   *    @  玩家   *  箱子在目标  +  玩家在目标
-   * ========================================================= */
-  const LEVELS = [
-    // 1 — 双子：两箱直线推（入门，10×9）
-    [ "##########",
-      "#        #",
-      "#  .  .  #",
-      "#        #",
-      "#  $  $  #",
-      "#        #",
-      "#   @    #",
-      "#        #",
-      "##########" ],
-    // 2 — 转角：单箱绕一个弯（9×9）
-    [ "#########",
-      "#.      #",
-      "#       #",
-      "#       #",
-      "#   $   #",
-      "#       #",
-      "#       #",
-      "#      @#",
-      "#########" ],
-    // 3 — 三连：三箱齐推，需注意顺序（10×9）
-    [ "##########",
-      "#        #",
-      "#  ...   #",
-      "#        #",
-      "#  $$$   #",
-      "#        #",
-      "#   @    #",
-      "#        #",
-      "##########" ],
-    // 4 — 四角：四箱送四角，地图更大（11×11）
-    [ "###########",
-      "#  .   .  #",
-      "#         #",
-      "#  $   $  #",
-      "#         #",
-      "#    @    #",
-      "#         #",
-      "#  $   $  #",
-      "#         #",
-      "#  .   .  #",
-      "###########" ],
-    // 5 — 墙后：两箱绕墙送上去，引入绕行（11×11）
-    [ "###########",
-      "#         #",
-      "#  .   .  #",
-      "#         #",
-      "#  #   #  #",
-      "#         #",
-      "#  $   $  #",
-      "#         #",
-      "#    @    #",
-      "#         #",
-      "###########" ],
-    // 6 — 绕柱：四箱绕立柱，上下双向绕行（12×12）
-    [ "############",
-      "#          #",
-      "#  .    .  #",
-      "#          #",
-      "#  #    #  #",
-      "#  $    $  #",
-      "#          #",
-      "#  $    $  #",
-      "#  #    #  #",
-      "#          #",
-      "#  .    .  #",
-      "#     @    #",
-      "############" ],
-    // 7 — 储藏：六箱绕墙，密度提升（13×12）
-    [ "#############",
-      "#           #",
-      "#  .  .  .  #",
-      "#           #",
-      "#  #  #  #  #",
-      "#  $  $  $  #",
-      "#           #",
-      "#  $  $  $  #",
-      "#  #  #  #  #",
-      "#  .  .  .  #",
-      "#     @     #",
-      "#############" ],
-    // 8 — 终局：六箱长程绕行，最大地图（13×14）
-    [ "#############",
-      "#           #",
-      "#  .  .  .  #",
-      "#           #",
-      "#  #  #  #  #",
-      "#  $  $  $  #",
-      "#           #",
-      "#     @     #",
-      "#           #",
-      "#  $  $  $  #",
-      "#  #  #  #  #",
-      "#           #",
-      "#  .  .  .  #",
-      "#############" ],
-  ];
-
-  /* =========================================================
-   *  玩家像素 Sprite (8x8)
-   *    . 透明   2 皮肤   3 头发   4 衣服   E 眼睛
-   * ========================================================= */
-  const SPR_PLAYER = [
-    "..3333..",
-    ".333333.",
-    ".222222.",
-    ".2E22E2.",
-    ".222222.",
-    "..4444..",
-    ".444444.",
-    ".4....4.",
-  ];
-  const PAL_PLAYER = { '2':'#f1c0a0', '3':'#5a3a22', '4':'#e63946', 'E':'#1a1a2a' };
-
-  /* =========================================================
-   *  DOM
-   * ========================================================= */
-  const $ = (id) => document.getElementById(id);
-  const canvas = $('canvas');
-  const ctx = canvas.getContext('2d');
-
-  /* =========================================================
-   *  状态
-   * ========================================================= */
-  let state = null;        // 当前关卡状态
-  let levelIndex = 0;
-  let screen = 'start';
-  let muted = false;
-  let paused = false;     // 过场遮罩时锁定输入
-  let anim = null;         // 移动动画
-  let rafId = null;
-  let lastT = 0;
-  let pulse = 0;           // 目标点呼吸动画相位
-
-  /* =========================================================
-   *  音效 (Web Audio, 纯生成无需文件)
-   * ========================================================= */
-  let audioCtx = null;
-  function beep(freq, dur, type='square', vol=0.08) {
-    if (muted) return;
-    try {
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = type; o.frequency.value = freq;
-      o.connect(g); g.connect(audioCtx.destination);
-      const t = audioCtx.currentTime;
-      g.gain.setValueAtTime(vol, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.start(t); o.stop(t + dur);
-    } catch (e) {}
-  }
-  const SFX = {
-    move:  () => beep(220, 0.05, 'square', 0.04),
-    push:  () => beep(140, 0.09, 'sawtooth', 0.06),
-    undo:  () => beep(180, 0.06, 'triangle', 0.05),
-    win:   () => { beep(523,0.10,'square',0.08); setTimeout(()=>beep(659,0.10,'square',0.08),90); setTimeout(()=>beep(784,0.18,'square',0.08),180); },
-    click: () => beep(330, 0.04, 'square', 0.04),
-  };
-
-  /* =========================================================
-   *  最佳步数存储
-   * ========================================================= */
-  const BEST_KEY = 'pixelSokobanBest_v1';
-  function loadBest() { try { return JSON.parse(localStorage.getItem(BEST_KEY) || '{}'); } catch(e){ return {}; } }
-  function saveBest(o){ try { localStorage.setItem(BEST_KEY, JSON.stringify(o)); } catch(e){} }
-  let best = loadBest();
-
-  /* =========================================================
-   *  关卡解析
-   * ========================================================= */
-  function parseLevel(rows) {
-    const maxLen = Math.max(...rows.map(r => r.length));
-    const grid = [];
-    const boxes = [];
-    let player = null;
-    for (let r = 0; r < rows.length; r++) {
-      const row = rows[r];
-      const g = [];
-      for (let c = 0; c < maxLen; c++) {
-        const ch = c < row.length ? row[c] : '#';
-        if (ch === '#') g.push('#');
-        else if (ch === '.') g.push('.');
-        else if (ch === '@' || ch === '+') { g.push(ch === '+' ? '.' : ' '); player = { r, c }; }
-        else if (ch === '$' || ch === '*') { g.push(ch === '*' ? '.' : ' '); boxes.push({ r, c }); }
-        else g.push(' ');
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PIXEL SOKOBAN | 像素推箱子</title>
+    <meta
+      name="description"
+      content="PIXEL SOKOBAN 像素推箱子 —— 16 关难度递进、四种游戏道具、星级评价的纯网页推箱子解谜游戏。A bilingual pixel-art Sokoban puzzle: 16 progressive levels, 4 item types, and star ratings."
+    />
+    <style>
+      :root {
+        --ink: #080a1a;
+        --night: #10175a;
+        --deep: #19005f;
+        --panel: #121a35;
+        --panel-light: #202c55;
+        --line: #42528f;
+        --gold: #ffd55a;
+        --orange: #f15b2a;
+        --pink: #ff7e9d;
+        --green: #5ad96f;
+        --blue: #3c8ed4;
+        --cream: #fff3c5;
+        --text: #f6f0ff;
+        --muted: #9ba8d6;
+        --red: #e8504e;
       }
-      grid.push(g);
-    }
-    return { rows: grid, boxes, player, moves: 0, history: [] };
-  }
-  function cell(s, r, c) {
-    if (r < 0 || c < 0 || r >= s.rows.length) return '#';
-    if (c >= s.rows[r].length) return '#';
-    return s.rows[r][c];
-  }
-  function boxAt(s, r, c) { return s.boxes.find(b => b.r === r && b.c === c); }
-  function isWin(s) {
-    for (let r = 0; r < s.rows.length; r++)
-      for (let c = 0; c < s.rows[r].length; c++)
-        if (s.rows[r][c] === '.' && !boxAt(s, r, c)) return false;
-    return true;
-  }
 
-  /* =========================================================
-   *  移动逻辑
-   * ========================================================= */
-  function tryMove(dr, dc) {
-    if (anim || paused || screen !== 'playing') return;
-    const s = state; if (!s) return;
-    const nr = s.player.r + dr, nc = s.player.c + dc;
-    if (cell(s, nr, nc) === '#') return;
-    const b = boxAt(s, nr, nc);
-    const fromR = s.player.r, fromC = s.player.c;
-
-    if (b) {
-      const br = b.r + dr, bc = b.c + dc;
-      if (cell(s, br, bc) === '#') return;       // 箱子后面是墙
-      if (boxAt(s, br, bc)) return;              // 箱子后面是箱子
-      s.history.push({ player: { r: fromR, c: fromC }, box: { from: { r: b.r, c: b.c }, to: { r: br, c: bc } } });
-      b.r = br; b.c = bc;
-      s.player.r = nr; s.player.c = nc;
-      s.moves++;
-      anim = {
-        fromR, fromC, toR: nr, toC: nc,
-        box: { fromR: br - dr, fromC: bc - dc, toR: br, toC: bc },
-        t: 0, dur: 95, push: true
-      };
-      SFX.push();
-    } else {
-      s.history.push({ player: { r: fromR, c: fromC }, box: null });
-      s.player.r = nr; s.player.c = nc;
-      s.moves++;
-      anim = { fromR, fromC, toR: nr, toC: nc, box: null, t: 0, dur: 75, push: false };
-      SFX.move();
-    }
-    updateHUD();
-  }
-
-  function undo() {
-    if (anim || paused || screen !== 'playing') return;
-    const s = state; if (!s || !s.history.length) return;
-    const last = s.history.pop();
-    s.player.r = last.player.r; s.player.c = last.player.c;
-    if (last.box) {
-      const f = last.box.from, t = last.box.to;
-      s.boxes.forEach(b => { if (b.r === t.r && b.c === t.c) { b.r = f.r; b.c = f.c; } });
-    }
-    s.moves = Math.max(0, s.moves - 1);
-    SFX.undo();
-    updateHUD();
-  }
-
-  /* =========================================================
-   *  主循环 (呼吸光 + 动画)
-   * ========================================================= */
-  function loop(now) {
-    if (!rafId) return;
-    const dt = Math.min(60, now - lastT); lastT = now;
-    pulse += dt * 0.004;
-    if (anim && state) {
-      anim.t += dt;
-      if (anim.t >= anim.dur) {
-        anim = null;
-        if (isWin(state)) onLevelComplete();
+      * {
+        box-sizing: border-box;
       }
-    }
-    if (state && screen === 'playing') render();
-    rafId = requestAnimationFrame(loop);
-  }
-  function startLoop() { if (!rafId) { lastT = performance.now(); rafId = requestAnimationFrame(loop); } }
-  function stopLoop() { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
 
-  /* =========================================================
-   *  渲染
-   * ========================================================= */
-  let TILE = 40;
-  function computeTile() {
-    const s = state; if (!s) return;
-    const cols = s.rows[0].length, rows = s.rows.length;
-    const maxW = Math.min(window.innerWidth - 48, 560);
-    const maxH = Math.min(window.innerHeight - 230, 430);
-    let t = Math.floor(Math.min(maxW / cols, maxH / rows));
-    if (t < 20) t = 20; if (t > 48) t = 48;
-    if (t !== TILE || canvas.width !== cols * t || canvas.height !== rows * t) {
-      TILE = t; canvas.width = cols * t; canvas.height = rows * t;
-    }
-  }
-  function easeOut(t) { return 1 - Math.pow(1 - t, 2); }
-
-  function render() {
-    if (!state) return;
-    const s = state;
-    computeTile();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 静态层：地板/墙/目标点
-    for (let r = 0; r < s.rows.length; r++) {
-      for (let c = 0; c < s.rows[r].length; c++) {
-        const x = c * TILE, y = r * TILE;
-        const ch = s.rows[r][c];
-        if (ch === '#') drawWall(x, y);
-        else { drawFloor(x, y, r, c); if (ch === '.') drawTarget(x, y); }
+      html {
+        scroll-behavior: smooth;
       }
-    }
-    // 箱子
-    for (const b of s.boxes) {
-      if (anim && anim.box && b.r === anim.box.toR && b.c === anim.box.toC) continue;
-      const onT = cell(s, b.r, b.c) === '.';
-      drawBox(b.c * TILE, b.r * TILE, onT);
-    }
-    // 动画中的箱子（插值）
-    if (anim && anim.box) {
-      const k = Math.min(1, anim.t / anim.dur);
-      const e = easeOut(k);
-      const r = anim.box.fromR + (anim.box.toR - anim.box.fromR) * e;
-      const c = anim.box.fromC + (anim.box.toC - anim.box.fromC) * e;
-      const onT = cell(s, anim.box.toR, anim.box.toC) === '.';
-      drawBox(c * TILE, r * TILE, onT);
-    }
-    // 玩家（插值）
-    {
-      let pr = s.player.r, pc = s.player.c;
-      if (anim) {
-        const k = Math.min(1, anim.t / anim.dur);
-        const e = easeOut(k);
-        pr = anim.fromR + (anim.toR - anim.fromR) * e;
-        pc = anim.fromC + (anim.toC - anim.fromC) * e;
+
+      body {
+        margin: 0;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 50% 8%, rgba(95, 39, 68, 0.6), transparent 28rem),
+          linear-gradient(180deg, #050819 0%, #090b1d 42%, #130044 100%);
+        font-family: "Courier New", Courier, monospace;
+        image-rendering: pixelated;
       }
-      drawPlayer(pc * TILE, pr * TILE);
-    }
-  }
 
-  function drawFloor(x, y, r, c) {
-    const base = ((r + c) % 2 === 0) ? '#c9a876' : '#bfa070';
-    ctx.fillStyle = base; ctx.fillRect(x, y, TILE, TILE);
-    ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    ctx.fillRect(x + TILE * 0.2, y + TILE * 0.15, Math.max(2, TILE * 0.07), Math.max(2, TILE * 0.07));
-    ctx.fillRect(x + TILE * 0.7, y + TILE * 0.6,  Math.max(2, TILE * 0.07), Math.max(2, TILE * 0.07));
-  }
-  function drawWall(x, y) {
-    ctx.fillStyle = '#6b4226'; ctx.fillRect(x, y, TILE, TILE);
-    ctx.fillStyle = '#8b5a3c'; ctx.fillRect(x, y, TILE, Math.max(2, TILE * 0.13));
-    ctx.fillStyle = '#4a2e1a'; ctx.fillRect(x, y + TILE - Math.max(2, TILE * 0.13), TILE, Math.max(2, TILE * 0.13));
-    ctx.fillStyle = '#4a2e1a';
-    ctx.fillRect(x + TILE * 0.5 - 1, y, 2, TILE);
-    ctx.fillRect(x, y + TILE * 0.5 - 1, TILE * 0.5, 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.fillRect(x + TILE * 0.12, y + TILE * 0.62, Math.max(2, TILE * 0.08), Math.max(2, TILE * 0.08));
-  }
-  function drawTarget(x, y) {
-    const cx = x + TILE / 2, cy = y + TILE / 2;
-    const g = Math.sin(pulse) * 0.3 + 0.7;
-    ctx.save();
-    ctx.globalAlpha = 0.45 * g;
-    ctx.fillStyle = '#e9c46a';
-    const rr = TILE * 0.28;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - rr); ctx.lineTo(cx + rr, cy);
-    ctx.lineTo(cx, cy + rr); ctx.lineTo(cx - rr, cy);
-    ctx.closePath(); ctx.fill();
-    ctx.globalAlpha = g;
-    ctx.fillStyle = '#f4a259';
-    ctx.fillRect(cx - 2, cy - 2, 4, 4);
-    ctx.restore();
-  }
-  function drawBox(x, y, onTarget) {
-    const pad = Math.max(2, TILE * 0.08);
-    const bx = x + pad, by = y + pad, bs = TILE - pad * 2;
-    const base = onTarget ? '#7cb342' : '#c08552';
-    const dark = onTarget ? '#33691e' : '#6f4317';
-    const lite = onTarget ? '#aed581' : '#d49a6a';
-    ctx.fillStyle = dark; ctx.fillRect(bx, by, bs, bs);
-    ctx.fillStyle = base; ctx.fillRect(bx + 2, by + 2, bs - 4, bs - 4);
-    ctx.fillStyle = lite; ctx.fillRect(bx + 2, by + 2, bs - 4, Math.max(2, bs * 0.12));
-    ctx.strokeStyle = dark; ctx.lineWidth = Math.max(2, TILE * 0.08);
-    ctx.beginPath();
-    ctx.moveTo(bx + 3, by + 3); ctx.lineTo(bx + bs - 3, by + bs - 3);
-    ctx.moveTo(bx + bs - 3, by + 3); ctx.lineTo(bx + 3, by + bs - 3);
-    ctx.stroke();
-    ctx.fillStyle = dark;
-    const rv = Math.max(2, TILE * 0.06);
-    ctx.fillRect(bx + 2, by + 2, rv, rv);
-    ctx.fillRect(bx + bs - 2 - rv, by + 2, rv, rv);
-    ctx.fillRect(bx + 2, by + bs - 2 - rv, rv, rv);
-    ctx.fillRect(bx + bs - 2 - rv, by + bs - 2 - rv, rv, rv);
-    if (onTarget) {
-      ctx.fillStyle = 'rgba(244,162,89,0.4)';
-      ctx.fillRect(x, y, TILE, 2); ctx.fillRect(x, y + TILE - 2, TILE, 2);
-      ctx.fillRect(x, y, 2, TILE); ctx.fillRect(x + TILE - 2, y, 2, TILE);
-    }
-  }
-  function drawPlayer(x, y) {
-    // 影子
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.beginPath();
-    ctx.ellipse(x + TILE / 2, y + TILE - TILE * 0.1, TILE * 0.3, TILE * 0.08, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // 走路轻微上下抖动
-    const bob = anim ? Math.sin((anim.t / anim.dur) * Math.PI) * (TILE * 0.04) : 0;
-    const px = Math.max(2, Math.floor(TILE / 8));
-    const sw = 8 * px;
-    const ox = x + Math.floor((TILE - sw) / 2);
-    const oy = y + Math.floor((TILE - sw) / 2) - bob;
-    drawSprite(SPR_PLAYER, PAL_PLAYER, ox, oy, px);
-  }
-  function drawSprite(spr, pal, ox, oy, px) {
-    for (let r = 0; r < spr.length; r++) {
-      const row = spr[r];
-      for (let c = 0; c < row.length; c++) {
-        const ch = row[c];
-        if (ch === '.' || ch === ' ') continue;
-        const col = pal[ch];
-        if (!col) continue;
-        ctx.fillStyle = col;
-        ctx.fillRect(ox + c * px, oy + r * px, px, px);
+      a {
+        color: inherit;
+        text-decoration: none;
       }
-    }
-  }
 
-  /* =========================================================
-   *  HUD / 屏幕
-   * ========================================================= */
-  function updateHUD() {
-    $('hud-level').textContent = (levelIndex + 1) + '/' + LEVELS.length;
-    $('hud-moves').textContent = state ? state.moves : 0;
-    $('hud-best').textContent = best[levelIndex] != null ? best[levelIndex] : '--';
-  }
-  function showScreen(name) {
-    screen = name;
-    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-    if (name === 'start') $('start-screen').classList.add('active');
-    else if (name === 'levels') { $('level-screen').classList.add('active'); buildLevelGrid(); }
-    else if (name === 'playing') $('play-screen').classList.add('active');
-    $('overlay-complete').classList.remove('active');
-    $('overlay-victory').classList.remove('active');
-    if (name === 'playing') startLoop(); else stopLoop();
-  }
-  function showOverlay(name) {
-    if (name === 'complete') $('overlay-complete').classList.add('active');
-    else if (name === 'victory') $('overlay-victory').classList.add('active');
-  }
-  function buildLevelGrid() {
-    const grid = $('level-grid'); grid.innerHTML = '';
-    LEVELS.forEach((lv, i) => {
-      const cell = document.createElement('button');
-      cell.className = 'level-cell';
-      const b = best[i];
-      cell.innerHTML = '<div>' + (i + 1) + '</div>' + (b != null ? '<div class="best">BEST ' + b + '</div>' : '');
-      cell.onclick = () => { SFX.click(); startLevel(i); };
-      grid.appendChild(cell);
-    });
-  }
-  function startLevel(i) {
-    levelIndex = i;
-    state = parseLevel(LEVELS[i]);
-    anim = null; paused = false;
-    stopLoop();
-    showScreen('playing');
-    updateHUD();
-    render();
-  }
-  function onLevelComplete() {
-    paused = true;
-    SFX.win();
-    const prev = best[levelIndex];
-    if (prev == null || state.moves < prev) { best[levelIndex] = state.moves; saveBest(best); }
-    const isLast = levelIndex >= LEVELS.length - 1;
-    $('complete-stats').textContent = 'MOVES ' + state.moves + (prev != null ? ' · BEST ' + Math.min(prev, state.moves) : '');
-    updateHUD();
-    if (isLast) showOverlay('victory'); else showOverlay('complete');
-  }
-  function restartLevel() { startLevel(levelIndex); }
-  function nextLevel() {
-    if (levelIndex < LEVELS.length - 1) startLevel(levelIndex + 1);
-    else showScreen('start');
-  }
+      .page {
+        min-height: 100vh;
+        overflow: hidden;
+      }
 
-  /* =========================================================
-   *  输入
-   * ========================================================= */
-  const KEY_MAP = {
-    ArrowUp:[-1,0], ArrowDown:[1,0], ArrowLeft:[0,-1], ArrowRight:[0,1],
-    w:[-1,0], s:[1,0], a:[0,-1], d:[0,1],
-    W:[-1,0], S:[1,0], A:[0,-1], D:[0,1]
-  };
-  document.addEventListener('keydown', (e) => {
-    if (screen === 'playing') {
-      if (KEY_MAP[e.key]) { e.preventDefault(); tryMove(KEY_MAP[e.key][0], KEY_MAP[e.key][1]); }
-      else if (e.key === 'r' || e.key === 'R') restartLevel();
-      else if (e.key === 'u' || e.key === 'U') undo();
-      else if (e.key === 'Escape') showScreen('start');
-    } else if (screen === 'start') {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startLevel(0); }
-    }
-  });
+      .en {
+        display: block;
+        color: var(--muted);
+        font-weight: 700;
+      }
 
-  // 触屏滑动
-  let touchStart = null;
-  canvas.addEventListener('touchstart', (e) => {
-    if (e.touches.length) touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  }, { passive: true });
-  canvas.addEventListener('touchend', (e) => {
-    if (!touchStart || !e.changedTouches.length) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
-    const ax = Math.abs(dx), ay = Math.abs(dy);
-    if (Math.max(ax, ay) < 20) { touchStart = null; return; }
-    if (ax > ay) tryMove(0, dx > 0 ? 1 : -1);
-    else tryMove(dy > 0 ? 1 : -1, 0);
-    touchStart = null;
-  }, { passive: true });
+      .nav {
+        position: fixed;
+        top: 0;
+        z-index: 10;
+        width: 100%;
+        border-bottom: 4px solid rgba(66, 82, 143, 0.45);
+        background: rgba(5, 8, 25, 0.86);
+        backdrop-filter: blur(10px);
+      }
 
-  // D-pad
-  function bindDpad(id, dr, dc) { $(id).addEventListener('click', () => tryMove(dr, dc)); }
-  bindDpad('dpad-up', -1, 0); bindDpad('dpad-down', 1, 0);
-  bindDpad('dpad-left', 0, -1); bindDpad('dpad-right', 0, 1);
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 14px 22px;
+      }
 
-  // 按钮
-  $('btn-start').onclick         = () => { SFX.click(); startLevel(0); };
-  $('btn-levels').onclick        = () => { SFX.click(); showScreen('levels'); };
-  $('btn-back-menu').onclick     = () => { SFX.click(); showScreen('start'); };
-  $('btn-undo').onclick          = () => { SFX.click(); undo(); };
-  $('btn-restart').onclick       = () => { SFX.click(); restartLevel(); };
-  $('btn-menu').onclick          = () => { SFX.click(); showScreen('start'); };
-  $('btn-sound').onclick         = () => { muted = !muted; $('btn-sound').textContent = muted ? 'OFF' : 'SND'; SFX.click(); };
-  $('btn-next').onclick          = () => { SFX.click(); nextLevel(); };
-  $('btn-replay').onclick        = () => { SFX.click(); restartLevel(); };
-  $('btn-restart-all').onclick   = () => { SFX.click(); startLevel(0); };
-  $('btn-menu-victory').onclick  = () => { SFX.click(); showScreen('start'); };
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
 
-  // 窗口尺寸变化
-  window.addEventListener('resize', () => { if (state && screen === 'playing') render(); });
+      .brand-mark {
+        width: 30px;
+        height: 30px;
+        background:
+          linear-gradient(var(--gold) 0 0) 9px 6px / 12px 12px no-repeat,
+          linear-gradient(#2b1736 0 0) 6px 18px / 18px 6px no-repeat,
+          var(--orange);
+        border: 4px solid #8f2c1b;
+        box-shadow: 4px 4px 0 #050819;
+      }
 
-  // 初始化
-  showScreen('start');
-})();
-</script>
-</body>
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .nav-links a:hover {
+        color: var(--gold);
+      }
+
+      .play-small {
+        border: 3px solid #8f2c1b;
+        background: var(--orange);
+        color: white;
+        box-shadow: 4px 4px 0 #050819;
+        padding: 9px 14px;
+        font-weight: 900;
+      }
+
+      .hero {
+        position: relative;
+        display: grid;
+        align-items: center;
+        min-height: 100vh;
+        padding: 100px 22px 56px;
+      }
+
+      .hero::before {
+        position: absolute;
+        inset: 0;
+        content: "";
+        background:
+          linear-gradient(90deg, transparent 0 14px, rgba(255, 255, 255, 0.07) 14px 15px, transparent 15px 60px),
+          linear-gradient(0deg, transparent 0 14px, rgba(255, 255, 255, 0.04) 14px 15px, transparent 15px 60px);
+        background-size: 60px 60px;
+        opacity: 0.15;
+        pointer-events: none;
+      }
+
+      .hero-inner {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
+        gap: 46px;
+        align-items: center;
+        max-width: 1180px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        width: fit-content;
+        margin-bottom: 18px;
+        border: 3px solid var(--line);
+        background: rgba(18, 26, 53, 0.82);
+        box-shadow: 5px 5px 0 #050819;
+        padding: 9px 13px;
+        color: var(--gold);
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      h1 {
+        max-width: 620px;
+        margin: 0;
+        color: var(--gold);
+        font-size: clamp(52px, 9vw, 112px);
+        line-height: 0.88;
+        text-shadow:
+          5px 0 #8f4a24,
+          0 5px #8f4a24,
+          7px 7px #471b3f;
+      }
+
+      .title-pink {
+        display: block;
+        color: var(--pink);
+      }
+
+      .subtitle {
+        max-width: 650px;
+        margin: 24px 0 0;
+        color: #dce4ff;
+        font-size: clamp(18px, 2.1vw, 24px);
+        line-height: 1.45;
+        font-weight: 700;
+      }
+
+      .subtitle .en {
+        margin-top: 10px;
+        font-size: 0.62em;
+        line-height: 1.5;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 34px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 56px;
+        border: 4px solid #8f2c1b;
+        background: var(--orange);
+        box-shadow: 6px 6px 0 #050819;
+        padding: 0 28px;
+        color: white;
+        font-size: 19px;
+        font-weight: 900;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+      }
+
+      .button:hover {
+        transform: translate(3px, 3px);
+        box-shadow: 3px 3px 0 #050819;
+      }
+
+      .button.secondary {
+        border-color: var(--line);
+        background: var(--panel);
+        color: var(--gold);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        max-width: 620px;
+        margin-top: 34px;
+      }
+
+      .stat {
+        border: 3px solid var(--line);
+        background: rgba(18, 26, 53, 0.86);
+        padding: 14px;
+        box-shadow: 4px 4px 0 #050819;
+      }
+
+      .stat strong {
+        display: block;
+        color: var(--gold);
+        font-size: 24px;
+      }
+
+      .stat span {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .game-window {
+        position: relative;
+        min-height: 560px;
+        border: 6px solid #263877;
+        background:
+          linear-gradient(180deg, var(--night) 0 58%, var(--deep) 58% 100%);
+        box-shadow: 0 0 0 8px #050819, 0 28px 90px rgba(242, 91, 42, 0.2);
+        overflow: hidden;
+      }
+
+      .stars {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(#fff 0 0) 30% 64px / 5px 5px no-repeat,
+          linear-gradient(#fff 0 0) 73% 44px / 5px 5px no-repeat,
+          linear-gradient(#fff 0 0) 92% 100px / 4px 4px no-repeat,
+          linear-gradient(#fff 0 0) 84% 210px / 5px 5px no-repeat,
+          linear-gradient(#fff 0 0) 12% 235px / 4px 4px no-repeat,
+          linear-gradient(#fff 0 0) 66% 265px / 4px 4px no-repeat;
+      }
+
+      .hud {
+        position: absolute;
+        left: 20px;
+        right: 20px;
+        top: 18px;
+        z-index: 3;
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        color: var(--gold);
+        font-weight: 900;
+        pointer-events: none;
+      }
+
+      .sok-board {
+        position: absolute;
+        inset: 66px 40px 36px;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        gap: 4px;
+        padding: 14px;
+        border: 4px solid #263877;
+        background: rgba(5, 8, 25, 0.55);
+      }
+
+      .cell {
+        position: relative;
+        border: 1px solid rgba(66, 82, 143, 0.35);
+        background: #131c3f;
+      }
+
+      .cell.wall {
+        background: #2b386f;
+        border-color: #3d4f93;
+        box-shadow: inset 0 0 0 2px #1a2350;
+      }
+
+      .cell.target::after {
+        content: "";
+        position: absolute;
+        inset: 26%;
+        border: 3px solid var(--gold);
+        border-radius: 50%;
+        opacity: 0.9;
+      }
+
+      .cell.box {
+        background: var(--orange);
+        border-color: #8f2c1b;
+        box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.25);
+      }
+
+      .cell.box.on {
+        background: var(--green);
+      }
+
+      .cell.player::before {
+        content: "";
+        position: absolute;
+        inset: 22%;
+        border-radius: 50%;
+        background: var(--cream);
+        box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.25);
+      }
+
+      .cell.portal {
+        background: radial-gradient(circle, var(--pink) 0 30%, #2a1140 72%);
+        border-color: var(--pink);
+      }
+
+      .cell.gate {
+        background: repeating-linear-gradient(45deg, #5a1d1d 0 6px, #3a1212 6px 12px);
+        border-color: #8f2c1b;
+      }
+
+      section {
+        padding: 74px 22px;
+      }
+
+      .section-inner {
+        max-width: 1180px;
+        margin: 0 auto;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      h2 {
+        margin: 0;
+        color: var(--gold);
+        font-size: clamp(32px, 4vw, 54px);
+        line-height: 1;
+        text-shadow: 3px 3px #8f4a24;
+      }
+
+      h2 .h2-en {
+        display: block;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 0.4em;
+        letter-spacing: 3px;
+        text-shadow: none;
+      }
+
+      .section-note {
+        max-width: 460px;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+        font-weight: 700;
+      }
+
+      .section-note .en {
+        margin-top: 8px;
+        font-size: 0.82em;
+        line-height: 1.5;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+
+      .feature,
+      .step,
+      .team-card {
+        border: 4px solid var(--line);
+        background: rgba(18, 26, 53, 0.88);
+        box-shadow: 6px 6px 0 #050819;
+      }
+
+      .feature {
+        padding: 22px;
+        min-height: 232px;
+      }
+
+      .feature-icon {
+        display: grid;
+        place-items: center;
+        width: 54px;
+        height: 54px;
+        margin-bottom: 18px;
+        border: 3px solid #050819;
+        background: var(--panel-light);
+        font-size: 28px;
+      }
+
+      h3 {
+        margin: 0;
+        color: #fff;
+        font-size: 22px;
+      }
+
+      h3 .en {
+        margin-top: 5px;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .feature p,
+      .step p,
+      .team-card p {
+        margin: 12px 0 0;
+        color: var(--muted);
+        line-height: 1.5;
+        font-weight: 700;
+      }
+
+      .feature p .en,
+      .step p .en,
+      .item-card p .en {
+        margin-top: 8px;
+        font-size: 0.86em;
+        line-height: 1.5;
+      }
+
+      .showcase {
+        background:
+          linear-gradient(180deg, rgba(16, 23, 90, 0.18), rgba(19, 0, 68, 0.42)),
+          #07091b;
+        border-top: 5px solid rgba(66, 82, 143, 0.45);
+        border-bottom: 5px solid rgba(66, 82, 143, 0.45);
+      }
+
+      .item-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-top: 6px;
+      }
+
+      .item-card {
+        border: 4px solid var(--line);
+        background: rgba(18, 26, 53, 0.92);
+        box-shadow: 6px 6px 0 #050819;
+        padding: 22px;
+        min-height: 240px;
+      }
+
+      .item-glyph {
+        display: grid;
+        place-items: center;
+        width: 56px;
+        height: 56px;
+        margin-bottom: 16px;
+        border: 3px solid #050819;
+        background: var(--panel-light);
+        font-size: 26px;
+        font-weight: 900;
+        color: var(--gold);
+      }
+
+      .item-card h3 {
+        font-size: 20px;
+      }
+
+      .item-card h3 .en {
+        font-size: 12px;
+      }
+
+      .step-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+
+      .step {
+        padding: 22px;
+      }
+
+      .step-number {
+        display: inline-grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        margin-bottom: 16px;
+        background: var(--orange);
+        box-shadow: 4px 4px 0 #050819;
+        color: white;
+        font-weight: 900;
+      }
+
+      .keys {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 26px;
+      }
+
+      .key {
+        border: 3px solid var(--line);
+        background: var(--panel);
+        box-shadow: 4px 4px 0 #050819;
+        padding: 10px 14px;
+        font-weight: 900;
+        color: var(--gold);
+      }
+
+      .key b {
+        color: #fff;
+      }
+
+      .cta {
+        position: relative;
+        text-align: center;
+        padding: 92px 22px 100px;
+      }
+
+      .cta-box {
+        max-width: 850px;
+        margin: 0 auto;
+        border: 5px solid var(--line);
+        background:
+          linear-gradient(180deg, rgba(18, 26, 53, 0.96), rgba(22, 24, 72, 0.96));
+        box-shadow: 8px 8px 0 #050819;
+        padding: 42px 26px;
+      }
+
+      .cta p {
+        max-width: 620px;
+        margin: 18px auto 28px;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.55;
+        font-weight: 700;
+      }
+
+      .cta p .en {
+        margin-top: 10px;
+        font-size: 0.8em;
+        line-height: 1.5;
+      }
+
+      .credit {
+        margin: 26px auto 0;
+        color: var(--cream);
+        font-weight: 900;
+        font-size: 16px;
+      }
+
+      .footer {
+        border-top: 4px solid rgba(66, 82, 143, 0.45);
+        padding: 24px 22px;
+        color: var(--muted);
+        background: #050819;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .footer-inner {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        max-width: 1180px;
+        margin: 0 auto;
+      }
+
+      @media (max-width: 980px) {
+        .hero-inner {
+          grid-template-columns: 1fr;
+        }
+
+        .game-window {
+          min-height: 500px;
+        }
+
+        .feature-grid,
+        .item-grid,
+        .step-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 680px) {
+        .nav-links a:not(.play-small) {
+          display: none;
+        }
+
+        .hero {
+          padding-top: 88px;
+        }
+
+        .stats,
+        .feature-grid,
+        .item-grid,
+        .step-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .game-window {
+          min-height: 430px;
+        }
+
+        .sok-board {
+          inset: 60px 18px 18px;
+          padding: 8px;
+          gap: 3px;
+        }
+
+        .section-head,
+        .footer-inner {
+          display: block;
+        }
+
+        .section-note {
+          margin-top: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <nav class="nav" aria-label="Primary navigation">
+        <div class="nav-inner">
+          <a class="brand" href="#top" aria-label="PIXEL SOKOBAN landing page">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span>PIXEL SOKOBAN</span>
+          </a>
+          <div class="nav-links">
+            <a href="#features">功能 Features</a>
+            <a href="#items">道具 Items</a>
+            <a href="#howto">玩法 How to Play</a>
+            <a class="play-small" href="pixel-sokoban/index.html">开始游戏 Play</a>
+          </div>
+        </div>
+      </nav>
+
+      <header class="hero" id="top">
+        <div class="hero-inner">
+          <div>
+            <div class="eyebrow">AI 课程作业 · 像素解谜 / AI COURSE · PIXEL PUZZLE</div>
+            <h1>PIXEL <span class="title-pink">SOKOBAN</span></h1>
+            <p class="subtitle">
+              像素推箱子 —— 把每一个箱子推到目标格即可过关。16 关难度递进、四种游戏道具、基于步数的星级评价，一个纯网页、零依赖、打开即玩的解谜小游戏。
+              <span class="en">Push every crate onto a target tile to clear the level. 16 progressive stages, four item types, and step-based star ratings — a zero-dependency, open-and-play browser puzzle.</span>
+            </p>
+            <div class="hero-actions">
+              <a class="button" href="pixel-sokoban/index.html">▶ 立即游玩 Play</a>
+              <a class="button secondary" href="#features">查看功能 Features</a>
+            </div>
+            <div class="stats" aria-label="Game highlights">
+              <div class="stat">
+                <strong>16</strong>
+                <span>递进关卡 Levels</span>
+              </div>
+              <div class="stat">
+                <strong>4</strong>
+                <span>种游戏道具 Items</span>
+              </div>
+              <div class="stat">
+                <strong>3★</strong>
+                <span>步数星级 Star Rating</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="game-window" aria-label="像素推箱子关卡预览">
+            <div class="stars"></div>
+            <div class="hud">
+              <span>LV 1/16</span>
+              <span>MOVES 0</span>
+              <span>★</span>
+            </div>
+            <div class="sok-board" aria-hidden="true">
+              <div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div>
+              <div class="cell wall"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell wall"></div>
+              <div class="cell wall"></div><div class="cell player"></div><div class="cell box"></div><div class="cell floor"></div><div class="cell target"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell wall"></div>
+              <div class="cell wall"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell box"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell target"></div><div class="cell wall"></div>
+              <div class="cell wall"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell wall"></div>
+              <div class="cell wall"></div><div class="cell floor"></div><div class="cell portal"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell portal"></div><div class="cell floor"></div><div class="cell wall"></div>
+              <div class="cell wall"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell gate"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell floor"></div><div class="cell wall"></div>
+              <div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div><div class="cell wall"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section id="features">
+        <div class="section-inner">
+          <div class="section-head">
+            <h2>游戏功能<span class="h2-en">GAME FEATURES</span></h2>
+            <p class="section-note">
+              页面沿用同一套霓虹夜色配色、厚边框面板与像素按钮风格，让落地页与游戏画面保持一致氛围。
+              <span class="en">The page reuses the same neon-night palette, chunky bordered panels, and pixel buttons so the landing page matches the game's look and feel.</span>
+            </p>
+          </div>
+          <div class="feature-grid">
+            <article class="feature">
+              <div class="feature-icon">🧩</div>
+              <h3>16 关递进<span class="en">16 Progressive Levels</span></h3>
+              <p>前 8 关为经典推箱教学，后 8 关逐步引入道具与综合挑战，难度平滑上升。
+                <span class="en">Levels 1–8 teach classic Sokoban; levels 9–16 progressively add items and combine mechanics for a smooth difficulty curve.</span>
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">🔧</div>
+              <h3>四种道具<span class="en">Four Item Types</span></h3>
+              <p>传送带、开关+门、彩色箱+同色目标、传送门，从第九关开始逐个登场。
+                <span class="en">Conveyors, switch &amp; door, colored crates &amp; matching targets, and portals — introduced one by one from level 9.</span>
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">⭐</div>
+              <h3>星级评价<span class="en">Star Ratings</span></h3>
+              <p>依据 PAR 最优步数评定：达标三星、1.5 倍二星、通关即一星。
+                <span class="en">Rated against the PAR optimal step count: 3 stars at PAR, 2 stars at 1.5×PAR, 1 star for clearing.</span>
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">↩️</div>
+              <h3>撤销 / 重做 / 回放<span class="en">Undo / Redo / Replay</span></h3>
+              <p>U 撤销、Y 重做、P 回放本关解法，R 随时重开，轻松试错不卡关。
+                <span class="en">U to undo, Y to redo, P to replay the solution, R to restart anytime — experiment freely without getting stuck.</span>
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="showcase" id="items">
+        <div class="section-inner">
+          <div class="section-head">
+            <h2>游戏道具<span class="h2-en">GAME ITEMS</span></h2>
+            <p class="section-note">
+              四种道具让谜题从单纯推箱升级为空间与机关推理，是后八关的核心乐趣。
+              <span class="en">The four items turn plain pushing into spatial and mechanism puzzles — the core fun of the later eight levels.</span>
+            </p>
+          </div>
+          <div class="item-grid">
+            <article class="item-card">
+              <div class="item-glyph">➤</div>
+              <h3>传送带<span class="en">Conveyor</span></h3>
+              <p>带有方向箭头（^ v &lt; &gt;）的格子，箱子被推上去后会沿箭头方向自动滑动。
+                <span class="en">Tiles marked with an arrow (^ v &lt; &gt;); a crate pushed onto one slides automatically in that direction.</span>
+              </p>
+            </article>
+            <article class="item-card">
+              <div class="item-glyph">S / D</div>
+              <h3>开关 + 门<span class="en">Switch + Door</span></h3>
+              <p>玩家踩下开关，对应编号的门即永久开启，可打开原本封锁的通道。
+                <span class="en">Step on a switch and the matching door opens permanently, unlocking previously blocked paths.</span>
+              </p>
+            </article>
+            <article class="item-card">
+              <div class="item-glyph">🎨</div>
+              <h3>彩色箱 + 同色目标<span class="en">Colored Crate + Target</span></h3>
+              <p>红 / 蓝 / 绿箱子必须各自推到对应颜色的目标格，混色即无效。
+                <span class="en">Red / blue / green crates must each reach a target of the same color; mismatched colors do not count.</span>
+              </p>
+            </article>
+            <article class="item-card">
+              <div class="item-glyph">🌀</div>
+              <h3>传送门<span class="en">Portal</span></h3>
+              <p>成对出现的传送门，玩家或箱子进入其一，会从配对的另一个出来。
+                <span class="en">Paired portals: the player or a crate entering one exits from its twin.</span>
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="howto">
+        <div class="section-inner">
+          <div class="section-head">
+            <h2>怎么玩<span class="h2-en">HOW TO PLAY</span></h2>
+            <p class="section-note">核心循环很简单：移动、推箱、用道具、让所有箱子归位。
+              <span class="en">The core loop is simple: move, push, use items, and get every crate home.</span>
+            </p>
+          </div>
+          <div class="step-grid">
+            <article class="step">
+              <span class="step-number">1</span>
+              <h3>移动 Move</h3>
+              <p>用方向键或 WASD 控制角色在地图中走动。
+                <span class="en">Use the arrow keys or WASD to walk around the map.</span>
+              </p>
+            </article>
+            <article class="step">
+              <span class="step-number">2</span>
+              <h3>推箱 Push</h3>
+              <p>走向箱子即可推动它，把每个箱子推到目标格上。
+                <span class="en">Walk into a crate to push it; park every crate on a target tile.</span>
+              </p>
+            </article>
+            <article class="step">
+              <span class="step-number">3</span>
+              <h3>用道具 Use Items</h3>
+              <p>善用传送带、开关、彩色目标与传送门破解更刁钻的布局。
+                <span class="en">Use conveyors, switches, colored targets, and portals to crack trickier layouts.</span>
+              </p>
+            </article>
+            <article class="step">
+              <span class="step-number">4</span>
+              <h3>通关 Win</h3>
+              <p>全部箱子归位即过关，系统按步数给出 1–3 星评价。
+                <span class="en">All crates home means you win; the game awards 1–3 stars by step count.</span>
+              </p>
+            </article>
+          </div>
+          <div class="keys" aria-label="操作按键">
+            <span class="key"><b>↑ ↓ ← →</b> / WASD 移动 Move</span>
+            <span class="key"><b>R</b> 重开 Restart</span>
+            <span class="key"><b>U</b> 撤销 Undo</span>
+            <span class="key"><b>Y</b> 重做 Redo</span>
+            <span class="key"><b>P</b> 回放 Replay</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta" id="play">
+        <div class="cta-box">
+          <h2>准备好推箱子了吗？<span class="h2-en">READY TO PUSH SOME BOXES?</span></h2>
+          <p>
+            打开可玩版本，从第一关开始，看看你能否用最少步数拿下全部 16 关的三星评价。
+            <span class="en">Open the playable version, start from level 1, and see if you can earn three stars on all 16 levels with the fewest steps.</span>
+          </p>
+          <a class="button" href="pixel-sokoban/index.html">▶ 进入游戏 Play</a>
+          <p class="credit">开发者 Developer · Vivi Lin Ziwei (林子微) · 2026214159</p>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-inner">
+          <span>PIXEL SOKOBAN · Vivi Lin Ziwei (林子微) · 2026214159</span>
+          <span>人工智能课程作业 · 纯网页像素解谜 · HTML5 Canvas / AI Course · Pixel Puzzle · HTML5 Canvas</span>
+        </div>
+      </footer>
+    </main>
+  </body>
 </html>
